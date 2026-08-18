@@ -1,0 +1,6 @@
+{
+  "name": "x-private-oauth2-privatter-inspired",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module"
+}
