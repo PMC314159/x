@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#09090b" />
+  <title>OTT Pair Archive Maker v23</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+  <style>
+    :root{
+      --accent:#e50914;
+      --accent-rgb:229,9,20;
+      --bar-color:#e50914;
+      --bar-track:#666a72;
+      --bg:#09090b;
+      --panel:#121317;
+      --panel2:#1a1c21;
+      --line:rgba(255,255,255,.10);
+      --text:#f6f6f7;
+      --muted:#a6a9b0;
+      --soft:#777b84;
+      --title-size:72px;
+      --title-weight:600;
+      --title-spacing:-1px;
+      --hero-info-base-size:16px;
+      --hero-content-max-width:760px;
+      --hero-detail-base-size:14px;
+      --info-veil-alpha:.07;
+      --info-veil-alpha-soft:.05;
+      --info-veil-shadow-alpha:.055;
+      --info-text-shadow-alpha:.44;
+      --info-text-shadow-soft-alpha:.24;
+      --capture-width:1400px;
+      --shadow:0 24px 80px rgba(0,0,0,.42);
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      min-height:100vh;
+      background:
+        radial-gradient(circle at 8% 0%,rgba(var(--accent-rgb),.15),transparent 28rem),
+        linear-gradient(180deg,#0f1013,#070709 72%);
+      color:var(--text);
+      font-family:Pretendard,"Apple SD Gothic Neo","Noto Sans KR",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      letter-spacing:-.02em;
+    }
+    button,input,textarea,select{font:inherit}
+    button{cursor:pointer}
+    img{display:block;max-width:100%}
+
+    /* 데스크톱에서는 편집창과 미리보기 영역이 각각 독립적으로 스크롤됩니다.
+       sticky 요소 자체에 overflow를 주면 <details>를 접고 펼칠 때 일부 브라우저에서
+       스크롤 범위가 갱신되지 않는 문제가 있어, 뷰포트 높이의 일반 grid item으로 고정합니다. */
+    .app-shell{display:grid;grid-template-columns:390px minmax(0,1fr);height:100vh;height:100dvh;min-height:0;overflow:hidden}
+    .editor{
+      position:relative;top:auto;align-self:stretch;height:100vh;height:100dvh;min-height:0;
+      overflow-y:scroll;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+      padding:24px 20px 64px;background:rgba(10,11,14,.94);
+      border-right:1px solid var(--line);backdrop-filter:blur(24px);z-index:20;
+      scrollbar-gutter:stable;
+    }
+    .editor::-webkit-scrollbar{width:9px}
+    .editor{touch-action:pan-y}
+    .editor::-webkit-scrollbar-thumb{background:rgba(255,255,255,.13);border-radius:99px}
+    .editor-head{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+    .app-mark{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:var(--accent);font-weight:900}
+    .editor-head h1{margin:0;font-size:18px}
+    .editor-head p{margin:3px 0 0;color:var(--muted);font-size:12px}
+    .toolbar{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:13px}
+    .toolbar button{min-height:44px;border:0;border-radius:12px;color:white;font-weight:800}
+    .primary-btn{background:var(--accent)}
+    .secondary-btn{background:#24262c;border:1px solid var(--line)!important}
+    .notice{padding:12px 13px;margin-bottom:13px;border-radius:13px;border:1px solid rgba(var(--accent-rgb),.28);background:rgba(var(--accent-rgb),.075);font-size:12px;line-height:1.55;color:#d7d9de}
+
+    details{border:1px solid var(--line);border-radius:15px;background:rgba(255,255,255,.025);margin-bottom:10px;overflow:hidden}
+    details[open]{background:rgba(255,255,255,.04)}
+    summary{list-style:none;padding:15px;font-size:14px;font-weight:850;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+    summary::-webkit-details-marker{display:none}
+    summary::after{content:"+";font-size:19px;color:var(--muted);font-weight:500}
+    details[open] summary::after{content:"−"}
+    .section-body{padding:0 15px 16px;border-top:1px solid rgba(255,255,255,.055)}
+    .field{margin-top:13px}
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    label{display:block;margin-bottom:7px;color:#c8cbd2;font-size:11px;font-weight:750}
+    .field-help{margin-top:6px;color:var(--soft);font-size:10px;line-height:1.45}
+    input[type=text],input[type=number],textarea,select{width:100%;border:1px solid var(--line);border-radius:10px;background:#111319;color:white;padding:10px 11px;outline:none}
+    textarea{min-height:84px;resize:vertical;line-height:1.55}
+    input:focus,textarea:focus,select:focus{border-color:rgba(var(--accent-rgb),.72);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.12)}
+    input[type=color]{width:100%;height:42px;border:1px solid var(--line);border-radius:10px;background:#111319;padding:4px}
+    input[type=range]{width:100%;accent-color:var(--accent)}
+    .file-field{position:relative;display:grid;place-items:center;min-height:68px;border:1px dashed rgba(255,255,255,.18);border-radius:12px;background:rgba(255,255,255,.025);text-align:center;color:var(--muted);overflow:hidden}
+    .file-field input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+    .file-field strong{color:#f2f3f5;font-size:12px}.file-field span{font-size:10px;margin-top:4px}
+    .item-editor{margin-top:13px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03)}
+    .item-editor h4{margin:0 0 9px;font-size:12px}
+    .image-position-controls{margin-top:10px;padding:10px 11px;border:1px solid rgba(255,255,255,.07);border-radius:11px;background:rgba(255,255,255,.025)}
+    .image-position-controls .field-row{margin-top:0}
+    .image-position-controls .field{margin-top:0}
+    .image-position-controls .field-help{margin-top:8px}
+    .mode-hidden{display:none!important}
+
+    .workspace{min-width:0;height:100vh;height:100dvh;min-height:0;padding:36px;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+    .preview-bar{max-width:100%;margin:0 auto 14px;display:flex;justify-content:space-between;gap:20px;color:var(--muted);font-size:12px}
+    .preview-bar strong{color:white}
+    /* 미리보기는 저장용 캔버스와 같은 고정 폭으로 렌더링한 뒤 화면에 맞게 축소해서 보여 줍니다. */
+    .preview-viewport{position:relative;margin:0 auto;overflow:visible}
+    .preview-scale{position:absolute;left:0;top:0;width:var(--capture-width);transform-origin:top left;will-change:transform}
+    #captureArea{width:var(--capture-width);max-width:none;margin:0;background:#0d0e10;overflow:hidden;border:1px solid rgba(255,255,255,.08);border-radius:30px;box-shadow:var(--shadow);isolation:isolate}
+
+    /* ===== common OTT header ===== */
+    .ott-header{height:82px;display:flex;align-items:center;justify-content:space-between;padding:0 50px;background:#08090b;border-bottom:1px solid rgba(255,255,255,.05)}
+    /* 상단 OTT 바를 숨기면 display:none으로 처리되어 저장 이미지에서도 해당 높이가 완전히 제거됩니다. */
+    #captureArea.header-hidden .ott-header{display:none!important}
+    #captureArea.profile-hidden .profile-pill{display:none!important}
+    .head-left{display:flex;align-items:center;gap:32px;min-width:0}
+    .brand{color:var(--accent);font-size:28px;font-weight:760;letter-spacing:.01em;line-height:1;overflow-wrap:anywhere}
+    .nav-links{display:flex;gap:20px;color:#b8bbc2;font-size:14px;font-weight:700}.nav-links span:first-child{color:white}
+    .profile-pill{display:flex;align-items:center;gap:9px;color:#d7d9dd;font-size:13px;font-weight:700;white-space:nowrap}
+    .avatar{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,rgba(var(--accent-rgb),.9),#2b2e35);font-size:0;line-height:0;flex:0 0 auto;overflow:hidden}
+    .avatar::after{content:"";display:block;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.88);box-shadow:0 0 0 2px rgba(0,0,0,.16)}
+    .avatar.has-image::after{display:none}
+    .avatar img{width:100%;height:100%;object-fit:cover;object-position:var(--profile-x,50%) var(--profile-y,50%);display:none}
+    .avatar.has-image img{display:block}
+
+    /* ===== LANDSCAPE HERO ===== */
+    .hero{position:relative;display:grid;grid-template-columns:minmax(0,1.65fr) minmax(280px,.72fr);align-items:end;gap:46px;min-height:700px;padding:76px 64px 66px;overflow:hidden;background:#17191d}
+    .hero-bg{position:absolute;inset:0;background-image:linear-gradient(90deg,rgba(5,6,8,.97) 0%,rgba(5,6,8,.82) 34%,rgba(5,6,8,.26) 68%,rgba(5,6,8,.58) 100%),linear-gradient(0deg,#0f1012 0%,transparent 32%),radial-gradient(circle at 72% 38%,rgba(var(--accent-rgb),.35),transparent 31rem),linear-gradient(135deg,#31353f,#11141a 56%,#090a0d);background-size:cover;background-position:center;transform:scale(1.01)}
+    .hero-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.24),transparent 42%)}
+    .hero-glow{position:absolute;width:520px;height:520px;border-radius:50%;left:-120px;bottom:-180px;background:rgba(var(--accent-rgb),.12);filter:blur(90px)}
+    .hero-content,.hero-detail{position:relative;z-index:2;min-width:0;isolation:isolate}
+    /* 밝은 일러스트에서도 글자가 읽히도록 가독성 효과가 적용됩니다. 효과 강도는 편집창에서 조절할 수 있습니다. */
+    .hero-content::before,.hero-detail::before{content:"";position:absolute;z-index:-1;pointer-events:none;border-radius:18px;background:rgba(0,0,0,var(--info-veil-alpha));box-shadow:0 0 28px 14px rgba(0,0,0,var(--info-veil-shadow-alpha))}
+    .hero-content::before{inset:-16px -20px -16px -16px;background:linear-gradient(90deg,rgba(0,0,0,var(--info-veil-alpha)),rgba(0,0,0,var(--info-veil-alpha-soft)) 72%,rgba(0,0,0,0))}
+    .hero-detail::before{inset:-11px -13px -11px -13px;background:rgba(0,0,0,var(--info-veil-alpha))}
+    /* 메인 정보 영역의 전체 크기는 부모 글자 크기를 기준으로 함께 조절됩니다. */
+    .hero-content{width:auto;max-width:var(--hero-content-max-width);font-size:var(--hero-info-base-size);text-shadow:0 2px 7px rgba(0,0,0,var(--info-text-shadow-alpha)),0 0 14px rgba(0,0,0,var(--info-text-shadow-soft-alpha))}
+    .original-label{color:var(--accent);font-size:1.1875em;font-weight:800;letter-spacing:.12em;margin-bottom:.8421em;overflow-wrap:anywhere}
+    .main-title{margin:0;max-width:100%;font-size:var(--title-size);line-height:1.12;letter-spacing:var(--title-spacing);font-weight:var(--title-weight);word-break:keep-all;overflow-wrap:anywhere;text-wrap:balance;text-shadow:0 4px 18px rgba(0,0,0,var(--info-text-shadow-alpha))}
+    .main-subtitle{margin-top:.8571em;color:#dedfe2;font-size:1.3125em;line-height:1.5;font-weight:560;white-space:pre-line;overflow-wrap:anywhere}
+    .progress-wrap{display:flex;align-items:center;gap:.875em;margin-top:1.75em;max-width:39.375em}
+    .progress-track{flex:1;min-width:6.25em;height:.3125em;border-radius:99px;overflow:hidden;background:var(--bar-track)}
+    .progress-value{height:100%;width:59%;background:var(--bar-color);border-radius:inherit}
+    .progress-text{color:#e1e2e5;font-size:.875em;font-weight:800;white-space:normal;text-align:right}
+    .hero-actions{display:flex;align-items:center;flex-wrap:wrap;gap:.75em;margin-top:1.5625em}
+    /* 저장 시 브라우저 기본 button 렌더링과 html2canvas의 글자 baseline 계산이 달라지는 현상을 피하기 위해
+       미리보기용 조작 요소는 일반 flex 박스로 렌더링합니다. */
+    .play-btn,.ghost-btn,.circle-btn{
+      border:0;font-weight:850;font-family:inherit!important;line-height:1!important;
+      -webkit-appearance:none;appearance:none;box-sizing:border-box;
+      display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;
+    }
+    .play-btn{gap:.625em;height:3.375em;padding:0 1.4375em;border-radius:.5em;background:#fff;color:#090a0c;font-size:1em}
+    .play-btn>span:not(.play-icon),.ghost-btn>span:not(.play-icon),.circle-btn>span{display:block;line-height:1!important}
+    .play-icon{display:block;flex:0 0 auto;width:0;height:0;border-top:.5625em solid transparent;border-bottom:.5625em solid transparent;border-left:.875em solid #090a0c}
+    .ghost-btn{gap:.5em;height:3.375em;padding:0 1.1875em;border-radius:.5em;background:rgba(110,113,122,.68);color:#fff;font-size:1em}
+    .ghost-play-icon{display:block;flex:0 0 auto;width:0;height:0;border-top:.43em solid transparent;border-bottom:.43em solid transparent;border-left:.68em solid currentColor}
+    .circle-btn{position:relative;flex:0 0 auto;width:2.25em;height:2.25em;padding:0;border-radius:50%;color:#fff;background:rgba(17,19,23,.48);border:.0833em solid rgba(255,255,255,.55);font-size:1.5em}
+    .circle-btn.favorite-active{color:var(--bar-color);border-color:var(--bar-color);background:rgba(var(--accent-rgb),.13)}
+    .plus-icon{position:relative;display:block;width:.72em;height:.72em}
+    .plus-icon::before,.plus-icon::after{content:"";position:absolute;left:50%;top:50%;background:currentColor;border-radius:99px;transform:translate(-50%,-50%)}
+    .plus-icon::before{width:.72em;height:.12em}.plus-icon::after{width:.12em;height:.72em}
+    .heart-icon{display:block;width:.9em;height:.9em;line-height:1!important;font-size:.9em;text-align:center}
+    .hero-meta{display:flex;align-items:center;flex-wrap:wrap;gap:.7857em;margin-top:2.1429em;color:#d1d2d6;font-size:.875em;font-weight:700}
+    .hero-meta>span{line-height:1!important;vertical-align:middle}
+    .rating-badge{display:inline-flex;align-items:center;justify-content:center;min-width:2.375em;height:2.375em;padding:0 .5625em;border-radius:.375em;background:#d7b64e;color:#111;font-size:1.1429em;font-weight:950;line-height:1!important}
+    .quality-badge{display:inline-flex;align-items:center;justify-content:center;height:1.8333em;border:1px solid rgba(255,255,255,.48);border-radius:.3333em;padding:0 .5833em;color:#fff;font-size:.8571em;line-height:1!important}
+    .synopsis{margin:1.3529em 0 0;color:#dedfe3;font-size:1.0625em;line-height:1.68;font-weight:500;white-space:pre-line;overflow-wrap:anywhere}
+    /* 오른쪽 상세 정보는 일반 그리드 흐름에 배치되어 본문이 길어져도 서로 겹치지 않습니다. */
+    .hero-detail{position:relative;right:auto;bottom:auto;width:auto;align-self:end;padding:1.4286em 0 .2857em;color:#e0e1e4;font-size:var(--hero-detail-base-size);line-height:1.62;text-shadow:0 2px 7px rgba(0,0,0,var(--info-text-shadow-alpha)),0 0 13px rgba(0,0,0,var(--info-text-shadow-soft-alpha));overflow-wrap:anywhere}
+    .hero-detail p{margin:0 0 .8571em}.hero-detail strong{color:#c5c7cc;font-weight:700}
+
+    /* ===== lower area ===== */
+    .lower-section{padding:52px 56px 22px;background:radial-gradient(circle at 50% -60%,rgba(var(--accent-rgb),.09),transparent 38rem),#111214}
+    .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:25px}
+    .section-title{margin:0;font-size:29px;line-height:1.2;letter-spacing:-.04em;overflow-wrap:anywhere}.section-note{color:var(--muted);font-size:13px;text-align:right;overflow-wrap:anywhere}
+
+    .recommend-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;align-items:start}
+    .recommend-card{min-width:0;align-self:start;background:#25272c;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.055);box-shadow:0 15px 30px rgba(0,0,0,.20)}
+    /* 가로 영화 모드에서는 가장 긴 추천 콘텐츠 본문 높이에 맞춰 다른 카드의 본문 높이도 동일하게 맞춰집니다. */
+    #captureArea.screen-landscape.content-movie .recommend-card{display:flex;flex-direction:column}
+    #captureArea.screen-landscape.content-movie .card-body{flex:0 0 auto}
+    .card-image{position:relative;aspect-ratio:16/9;overflow:hidden;background:radial-gradient(circle at 70% 20%,rgba(var(--accent-rgb),.48),transparent 34%),linear-gradient(135deg,#494e59,#1a1c22 60%,#0d0e11)}
+    /* html2canvas에서는 object-fit: cover가 저장 과정에서 무시되어 이미지가 납작해질 수 있습니다.
+       썸네일 이미지는 JS에서 원본 비율을 계산해 실제 렌더링 크기를 지정합니다. */
+    .card-image img{position:absolute;display:block;max-width:none;object-fit:fill}.card-image::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.48),transparent 58%);pointer-events:none}
+    .duration{position:absolute;right:13px;top:11px;z-index:2;color:#fff;font-size:14px;font-weight:850;text-shadow:0 2px 12px #000}
+    .card-title-overlay{position:absolute;left:16px;right:16px;bottom:13px;z-index:2;color:#fff;font-size:21px;line-height:1.12;font-weight:650;overflow-wrap:anywhere;text-shadow:0 4px 16px rgba(0,0,0,.75)}
+    .card-body{padding:14px 17px 14px;min-height:0}.card-meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px;color:#c8cbd0;font-size:13px;line-height:1}.card-meta>span{line-height:1!important}.card-meta .rating-badge{min-width:28px;height:24px;padding:0 6px;border-radius:4px;font-size:12px;font-weight:900}.card-meta .quality-badge{height:24px;font-size:12px}
+
+    /* 메인 작품의 관람등급과 화질 배지는 같은 높이로 표시됩니다.
+       두 배지 모두 같은 글자 크기와 2em 높이를 사용하므로 메인 정보 영역 크기를
+       조절해도 함께 비례하여 커지고 작아집니다. */
+    .hero-meta .rating-badge,
+    .hero-meta .quality-badge{
+      height:2em;
+      min-height:2em;
+      max-height:2em;
+      box-sizing:border-box;
+      font-size:.8571em;
+      line-height:1!important;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      vertical-align:middle;
+    }
+    .hero-meta .rating-badge{
+      min-width:2.25em;
+      padding:0 .5em;
+      border-radius:.3333em;
+      font-weight:900;
+    }
+    .hero-meta .quality-badge{
+      padding:0 .5833em;
+      border-radius:.3333em;
+    }
+    .card-desc{margin:9px 0 0;color:#d1d2d6;font-size:13px;line-height:1.52;white-space:pre-line;overflow-wrap:anywhere}
+
+    .episode-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 18px}
+    .episode-item{min-width:0;display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;padding:15px;border-radius:10px;background:#1a1b1f;border:1px solid rgba(255,255,255,.055)}
+    .episode-thumb{position:relative;aspect-ratio:16/9;border-radius:7px;overflow:hidden;background:linear-gradient(135deg,#414650,#17191e)}
+    .episode-thumb img{position:absolute;display:block;max-width:none;object-fit:fill}.episode-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(15,16,18,.62);border:1px solid rgba(255,255,255,.45);font-size:0;line-height:0}.episode-play::after{content:"";display:block;margin-left:3px;width:0;height:0;border-top:9px solid transparent;border-bottom:9px solid transparent;border-left:14px solid #fff}
+    .episode-info{min-width:0}.episode-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.episode-name{font-size:17px;font-weight:760;line-height:1.35;overflow-wrap:anywhere}.episode-runtime{color:#aeb1b8;font-size:13px;white-space:nowrap}.episode-desc{margin:10px 0 0;color:#bfc1c6;font-size:13px;line-height:1.55;white-space:pre-line;overflow-wrap:anywhere}
+
+    .credit{padding:18px 56px 20px;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;color:#777b84;background:#111214;border-top:0;font-size:11px;overflow-wrap:anywhere}
+    .fixed-credit{flex:0 0 auto;white-space:nowrap}
+    .artist-credit{margin-left:auto;max-width:58%;text-align:right;color:inherit;overflow-wrap:anywhere}
+    .is-empty{display:none!important}
+
+    /* ===== PORTRAIT / PHONE MODE ===== */
+    #captureArea.screen-portrait{--capture-width:760px;border-radius:28px}
+    #captureArea.screen-portrait .ott-header{height:72px;padding:0 20px;background:#000}
+    #captureArea.screen-portrait .nav-links{display:none}
+    #captureArea.screen-portrait .brand{font-size:22px}
+    #captureArea.screen-portrait .profile-pill span{display:none}
+    #captureArea.screen-portrait .avatar{width:34px;height:34px}
+    #captureArea.screen-portrait .hero{display:block;min-height:0;padding:0;background:#000;overflow:visible}
+    #captureArea.screen-portrait .hero-bg{position:relative;inset:auto;width:100%;height:430px;transform:none;background-size:cover;background-position:center}
+    #captureArea.screen-portrait .hero-bg::after{background:linear-gradient(0deg,rgba(0,0,0,.34),transparent 36%)}
+    #captureArea.screen-portrait .hero-glow{display:none}
+    #captureArea.screen-portrait .hero-content{max-width:none;padding:1.6875em 1.25em 1.4375em;background:#000}
+    #captureArea.screen-portrait .original-label{font-size:.8125em;margin-bottom:.7692em;letter-spacing:.10em}
+    #captureArea.screen-portrait .main-title{font-size:2.625em!important;line-height:1.14;letter-spacing:-.7px!important;font-weight:560!important;text-wrap:wrap}
+    #captureArea.screen-portrait .main-subtitle{font-size:1em;line-height:1.5;margin-top:.625em;color:#f0f0f1}
+    #captureArea.screen-portrait .hero-meta{margin-top:1.0714em;gap:.6429em;font-size:.875em;order:2}
+    #captureArea.screen-portrait .hero-meta .rating-badge,
+    #captureArea.screen-portrait .hero-meta .quality-badge{height:2em;min-height:2em;max-height:2em;font-size:.8571em}
+    #captureArea.screen-portrait .hero-meta .rating-badge{min-width:2.25em;border-radius:.3333em;padding:0 .5em}
+    #captureArea.screen-portrait .hero-meta .quality-badge{padding:0 .5833em}
+    #captureArea.screen-portrait .progress-wrap{margin-top:1.25em;max-width:none;gap:.625em}
+    #captureArea.screen-portrait .progress-text{font-size:.75em;color:#9ea1a8}
+    #captureArea.screen-portrait .hero-actions{display:grid;grid-template-columns:1fr;gap:.625em;margin-top:1.125em}
+    #captureArea.screen-portrait .play-btn,#captureArea.screen-portrait .ghost-btn{width:100%;height:3.2941em;justify-content:center;border-radius:.2941em;font-size:1.0625em}
+    #captureArea.screen-portrait .ghost-btn{display:flex;align-items:center;justify-content:center;background:#333;color:#fff}
+    #captureArea.screen-portrait .circle-btn{display:none}
+    #captureArea.screen-portrait .mobile-actions{display:flex}
+    #captureArea.screen-portrait .synopsis{margin-top:1.4667em;font-size:.9375em;line-height:1.6;color:#e2e2e4}
+    #captureArea.screen-portrait .hero-content::before,#captureArea.screen-portrait .hero-detail::before{display:none}
+    #captureArea.screen-portrait .hero-detail{padding:0 20px 28px;background:#000;font-size:var(--hero-detail-base-size);color:#aaa;text-shadow:none}
+    #captureArea.screen-portrait .hero-detail p{margin-bottom:7px}
+    #captureArea.screen-portrait .hero-detail strong{color:#777}
+    #captureArea.screen-portrait .lower-section{padding:0 18px 18px;background:#000}
+    #captureArea.screen-portrait .section-head{align-items:flex-start;margin:0 0 20px;padding-top:21px;border-top:1px solid rgba(255,255,255,.06)}
+    #captureArea.screen-portrait .section-title{font-size:23px}
+    #captureArea.screen-portrait .section-note{font-size:12px}
+    #captureArea.screen-portrait .recommend-grid{grid-template-columns:1fr;gap:14px;align-items:start}
+    #captureArea.screen-portrait .recommend-card{display:grid;grid-template-columns:235px minmax(0,1fr);border:0;border-radius:0;background:transparent;box-shadow:none;padding-bottom:18px;border-bottom:1px solid rgba(255,255,255,.08)}
+    #captureArea.screen-portrait .card-image{border-radius:8px;aspect-ratio:16/9}
+    #captureArea.screen-portrait .card-title-overlay{display:none}
+    #captureArea.screen-portrait .duration{display:none}
+    #captureArea.screen-portrait .card-body{min-height:0;padding:2px 0 0 17px}
+    #captureArea.screen-portrait .card-body::before{content:attr(data-title);display:block;color:#f3f3f4;font-size:17px;font-weight:760;line-height:1.35;margin-bottom:7px;overflow-wrap:anywhere}
+    #captureArea.screen-portrait .card-desc{font-size:13px;margin-top:10px;color:#b8bbc1;line-height:1.52}
+    #captureArea.screen-portrait .episode-list{grid-template-columns:1fr;gap:0}
+    #captureArea.screen-portrait .episode-item{grid-template-columns:220px minmax(0,1fr);gap:16px;padding:18px 0;border-radius:0;background:transparent;border:0;border-bottom:1px solid rgba(255,255,255,.08)}
+    #captureArea.screen-portrait .episode-thumb{border-radius:8px}
+    #captureArea.screen-portrait .episode-name{font-size:17px}
+    #captureArea.screen-portrait .episode-runtime{font-size:13px}
+    #captureArea.screen-portrait .episode-desc{font-size:13px;color:#aeb1b7}
+    #captureArea.screen-portrait .credit{padding:18px 20px 20px;background:#000;flex-direction:row;align-items:flex-end;justify-content:space-between;gap:14px}
+    #captureArea.screen-portrait .artist-credit{max-width:56%;text-align:right}
+    .mobile-actions{display:none;align-items:flex-start;justify-content:space-around;gap:10px;margin:20px 0 0}
+    .mobile-action{flex:1;text-align:center;color:#eee;font-size:11px;line-height:1.25}.mobile-action .ico{display:block;font-size:28px;line-height:1;margin-bottom:7px}
+
+    /* 콘텐츠 모드에 맞지 않는 요소는 자동으로 숨겨집니다. */
+    #captureArea.content-drama .movie-only{display:none!important}
+    #captureArea.content-movie .drama-only{display:none!important}
+    #captureArea.content-movie .drama-meta{display:none!important}
+    #captureArea.lower-hidden .lower-section{display:none!important}
+
+    .export-overlay{position:fixed;inset:0;z-index:9999;display:none;place-items:center;background:rgba(3,4,6,.76);backdrop-filter:blur(12px)}
+    .export-overlay.show{display:grid}.export-box{padding:24px 28px;border-radius:18px;background:#17191f;border:1px solid var(--line);box-shadow:var(--shadow);text-align:center}.spinner{width:38px;height:38px;border:4px solid rgba(255,255,255,.15);border-top-color:var(--accent);border-radius:50%;margin:0 auto 13px;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+    body.exporting .editor,body.exporting .preview-bar{display:none!important}
+    body.exporting .app-shell{display:block;height:auto!important;min-height:0!important;overflow:visible!important}
+    body.exporting .workspace{height:auto!important;min-height:0!important;padding:0;overflow:visible!important}
+    body.exporting .preview-viewport{width:auto!important;height:auto!important;margin:0!important}
+    body.exporting .preview-scale{position:static!important;transform:none!important;width:var(--capture-width)!important}
+    body.exporting #captureArea{width:var(--capture-width)!important;max-width:none!important;border-radius:0!important;border:0!important;box-shadow:none!important}
+
+    @media(max-width:1180px){.app-shell{grid-template-columns:340px minmax(0,1fr)}.workspace{padding:24px}}
+    @media(max-width:860px){.app-shell{display:block;height:auto;min-height:100vh;overflow:visible}.editor{position:relative;height:auto;min-height:0;overflow:visible;border-right:0;border-bottom:1px solid var(--line);padding-bottom:40px}.workspace{height:auto;min-height:0;overflow:visible;padding:18px 10px 34px}.preview-bar{padding:0 8px}}
+    @media(max-width:560px){.field-row,.toolbar{grid-template-columns:1fr}.preview-bar{flex-direction:column;gap:4px}}
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="editor">
+    <div class="editor-head"><div class="app-mark">▶</div><div><h1>OTT Pair Archive Maker</h1><p>가로/세로 × 드라마/영화</p></div></div>
+    <div class="toolbar"><button class="primary-btn" id="downloadBtn">PNG 저장</button><button class="secondary-btn" id="resetBtn">예시로 초기화</button></div>
+    <div class="notice">화면 모드와 콘텐츠 모드는 각각 선택할 수 있습니다. 드라마 모드에서는 아래에 회차 목록이 표시되며, 영화 모드에서는 추천 콘텐츠가 표시됩니다. 각 목록은 필요에 따라 숨길 수 있습니다.</div>
+
+    <details open>
+      <summary>화면 · 콘텐츠 모드</summary>
+      <div class="section-body">
+        <div class="field"><label for="headerVisibleSelect">메인 상단 OTT 바</label><select id="headerVisibleSelect"><option value="on" selected>표시</option><option value="off">숨기기</option></select><div class="field-help">숨기면 미리보기와 저장 이미지에서 상단 바가 사라지며, 해당 높이만큼 전체 이미지 높이도 줄어듭니다.</div></div>
+        <div class="field-row">
+          <div class="field"><label for="screenMode">화면 모드</label><select id="screenMode"><option value="landscape" selected>가로 · 패드/컴퓨터</option><option value="portrait">세로 · 휴대폰</option></select></div>
+          <div class="field"><label for="contentMode">콘텐츠 모드</label><select id="contentMode"><option value="drama" selected>드라마 · 회차 표시</option><option value="movie">영화 · 추천 콘텐츠 표시</option></select></div>
+        </div>
+        <div class="field">
+          <label for="themePreset">테마 프리셋</label><select id="themePreset"><option value="red">시네마 레드</option><option value="blue">블루</option><option value="purple">퍼플</option><option value="green">그린</option><option value="custom">직접 선택</option></select>
+        </div>
+        <div class="field">
+          <label for="lowerSectionVisibleSelect">회차 · 비슷한 콘텐츠 목록</label>
+          <select id="lowerSectionVisibleSelect"><option value="on" selected>표시</option><option value="off">숨기기</option></select>
+          <div class="field-help">숨기면 드라마의 회차 목록 또는 영화의 비슷한 콘텐츠 목록이 저장 이미지에서도 완전히 제거됩니다.</div>
+        </div>
+        <div class="field"><label for="siteTitleInput">사이트 제목 · OTT명</label><input id="siteTitleInput" type="text" value="SOLFLIX" /></div>
+        <div class="field-row"><div class="field"><label for="accentColor">포인트 컬러</label><input id="accentColor" type="color" value="#e50914" /></div><div class="field"><label for="barColor">진행 바 컬러</label><input id="barColor" type="color" value="#e50914" /></div></div>
+        <div class="field"><label for="barTrackColor">진행 바 배경</label><input id="barTrackColor" type="color" value="#666a72" /></div>
+      </div>
+    </details>
+
+    <details open>
+      <summary>메인 작품</summary>
+      <div class="section-body">
+        <div class="field"><label>메인 이미지</label><label class="file-field"><input id="heroImageInput" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.heic,.heif" /><strong>이미지 업로드</strong><span>가로 모드에서는 넓은 이미지로, 세로 모드에서는 영상 스틸처럼 표시됩니다. JPG, PNG, WEBP, AVIF, HEIC/HEIF 등을 불러올 수 있습니다. PNG/JPG/WEBP 등은 브라우저가 원본 파일을 직접 표시하며, 별도의 재인코딩을 거치지 않습니다.</span></label></div>
+        <div class="field-row"><div class="field"><label for="heroX">가로 위치</label><input id="heroX" type="range" min="0" max="100" value="66" /></div><div class="field"><label for="heroY">세로 위치</label><input id="heroY" type="range" min="0" max="100" value="42" /></div></div>
+        <div class="field-row"><div class="field"><label for="heroBrightness">밝기</label><input id="heroBrightness" type="range" min="55" max="130" value="100" /></div><div class="field"><label for="heroSaturation">채도</label><input id="heroSaturation" type="range" min="0" max="160" value="100" /></div></div>
+        <div class="field-row">
+          <div class="field"><label for="heroEdgeDarknessInput">화면 가장자리 어둡기 · <span id="heroEdgeDarknessValue">35%</span></label><input id="heroEdgeDarknessInput" type="range" min="0" max="100" value="35" step="1" /><div class="field-help">배경 이미지의 좌우 가장자리에 적용되는 어두운 그라데이션의 강도를 조절할 수 있습니다. 0%에서는 거의 적용되지 않습니다.</div></div>
+          <div class="field"><label for="readabilityStrengthInput">글자 가독성 효과 · <span id="readabilityStrengthValue">35%</span></label><input id="readabilityStrengthInput" type="range" min="0" max="100" value="35" step="1" /><div class="field-help">메인 정보와 출연·장르 영역 뒤의 옅은 베일 및 글자 그림자 강도를 조절할 수 있습니다.</div></div>
+        </div>
+        <div class="field"><label for="originalInput">상단 라벨</label><input id="originalInput" type="text" value="A SOLFLIX ORIGINAL" /></div>
+        <div class="field"><label for="titleInput">작품 제목</label><input id="titleInput" type="text" value="자정 이후에도" /></div>
+        <div class="field"><label for="heroInfoScaleInput">메인 정보 영역 크기 · <span id="heroInfoScaleValue">100%</span></label><input id="heroInfoScaleInput" type="range" min="60" max="140" value="100" step="1" /><div class="field-help">상단 라벨, 작품 제목, 부제목, 재생 정보, 버튼, 메타 정보, 작품 소개의 크기와 간격을 한 번에 조절할 수 있습니다. 가로 모드에서는 정보 영역의 최대 폭도 함께 조절됩니다.</div></div>
+        <div class="field-row"><div class="field"><label for="titleSizeInput">가로 모드 제목 크기</label><input id="titleSizeInput" type="range" min="42" max="96" value="72" /></div><div class="field"><label for="titleWeightInput">가로 모드 제목 굵기</label><select id="titleWeightInput"><option value="500">보통</option><option value="600" selected>약간 굵게</option><option value="700">굵게</option><option value="800">매우 굵게</option></select></div></div>
+        <div class="field"><label for="titleSpacingInput">가로 모드 제목 글자 간격</label><input id="titleSpacingInput" type="range" min="-6" max="4" value="-1" /></div>
+        <div class="field"><label for="subtitleInput">작품 부제목 · 캐치프레이즈</label><textarea id="subtitleInput">끝난 이야기 바깥에서, 두 사람은 다시 서로를 선택한다.</textarea></div>
+        <div class="field-row"><div class="field"><label for="yearInput">연도</label><input id="yearInput" type="text" value="2026" /></div><div class="field" id="seasonField"><label for="seasonInput">드라마 시즌 · 회차 · 기타</label><input id="seasonInput" type="text" value="시즌 1 · 12화" /><div class="field-help">영화 모드에서는 이 항목이 미리보기와 저장 이미지에서 표시되지 않습니다.</div></div></div>
+        <div class="field-row"><div class="field"><label for="ratingInput">관람등급</label><input id="ratingInput" type="text" value="15" /></div><div class="field"><label for="qualityInput">화질 표시</label><input id="qualityInput" type="text" value="HD" /></div></div>
+        <div class="field"><label for="runtimeInput">재생 시간 문구</label><input id="runtimeInput" type="text" value="총 64분 중 38분" /></div>
+        <div class="field"><label for="progressInput">재생 진행률</label><input id="progressInput" type="range" min="0" max="100" value="59" /></div>
+        <div class="field"><label for="favoriteSelect">즐겨찾기 상태</label><select id="favoriteSelect"><option value="off" selected>즐겨찾기 아님</option><option value="on">즐겨찾기</option><option value="hidden">버튼 숨기기</option></select></div>
+        <div class="field"><label for="synopsisInput">작품 소개</label><textarea id="synopsisInput">원래의 세계와 이야기 속 세계 사이를 오가는 한 사람. 모두의 기억에서 사라지는 순간에도, 단 한 사람만은 그녀를 잊지 않는다. 자정이 되기 전까지 두 사람은 끝나지 않은 결말을 찾아야 한다.</textarea></div>
+        <div class="field"><label for="castInput">출연</label><input id="castInput" type="text" value="이자헌, 정희솔" /></div>
+        <div class="field"><label for="genreInput">장르</label><input id="genreInput" type="text" value="로맨스, 미스터리, 다크 판타지" /></div>
+        <div class="field"><label for="featureInput">작품 특징</label><input id="featureInput" type="text" value="상상의 나래, 어두운, 감정적인" /></div>
+        <div class="field"><label for="heroDetailScaleInput">출연 · 장르 · 작품 특징 영역 크기 · <span id="heroDetailScaleValue">100%</span></label><input id="heroDetailScaleInput" type="range" min="60" max="140" value="100" step="1" /><div class="field-help">출연, 장르, 작품 특징 영역의 글자 크기와 간격을 한 번에 조절할 수 있습니다.</div></div>
+      </div>
+    </details>
+
+    <details>
+      <summary>버튼 · 메뉴 · 표시 문구</summary>
+      <div class="section-body">
+        <div class="field-row"><div class="field"><label for="nav1Input">메뉴 1</label><input id="nav1Input" type="text" value="홈" /></div><div class="field"><label for="nav2Input">메뉴 2</label><input id="nav2Input" type="text" value="시리즈" /></div></div>
+        <div class="field-row"><div class="field"><label for="nav3Input">메뉴 3</label><input id="nav3Input" type="text" value="영화" /></div><div class="field"><label for="nav4Input">메뉴 4</label><input id="nav4Input" type="text" value="내가 찜한 콘텐츠" /></div></div>
+        <div class="field"><label for="profileVisibleSelect">USER PROFILE</label><select id="profileVisibleSelect"><option value="on" selected>표시</option><option value="off">숨기기</option></select><div class="field-help">숨기면 상단 바의 프로필 사진과 USER PROFILE 문구가 함께 사라집니다. 상단 OTT 바는 그대로 유지할 수 있습니다.</div></div>
+        <div class="field"><label>프로필 사진</label><label class="file-field"><input id="profileImageInput" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.heic,.heif" /><strong>프로필 이미지 업로드</strong><span>정사각형 이미지가 가장 자연스럽게 표시됩니다.</span></label></div>
+        <div class="image-position-controls">
+          <div class="field-row">
+            <div class="field"><label for="profileX">프로필 사진 좌우 위치</label><input id="profileX" type="range" min="0" max="100" value="50" /></div>
+            <div class="field"><label for="profileY">프로필 사진 상하 위치</label><input id="profileY" type="range" min="0" max="100" value="50" /></div>
+          </div>
+          <div class="field-help">프로필 프레임을 빈틈없이 채운 상태에서 사진의 보이는 위치를 조절할 수 있습니다.</div>
+        </div>
+        <div class="field"><label for="profileInput">프로필 문구</label><input id="profileInput" type="text" value="USER PROFILE" /></div>
+        <div class="field-row"><div class="field"><label for="playInput">재생 버튼</label><input id="playInput" type="text" value="재생" /></div><div class="field"><label for="watchInput">두 번째 버튼</label><input id="watchInput" type="text" value="같이 보기" /></div></div>
+        <div class="field-row"><div class="field"><label for="mobileAction1Input">세로 모드 액션 1</label><input id="mobileAction1Input" type="text" value="내가 찜한 리스트" /></div><div class="field"><label for="mobileAction2Input">세로 모드 액션 2</label><input id="mobileAction2Input" type="text" value="평가" /></div></div>
+        <div class="field-row"><div class="field"><label for="mobileAction3Input">세로 모드 액션 3</label><input id="mobileAction3Input" type="text" value="공유" /></div><div class="field"><label for="mobileAction4Input">세로 모드 액션 4</label><input id="mobileAction4Input" type="text" value="저장" /></div></div>
+        <div class="field-row"><div class="field"><label for="castLabelInput">출연 항목명</label><input id="castLabelInput" type="text" value="출연" /></div><div class="field"><label for="genreLabelInput">장르 항목명</label><input id="genreLabelInput" type="text" value="장르" /></div></div>
+        <div class="field"><label for="featureLabelInput">특징 항목명</label><input id="featureLabelInput" type="text" value="작품 특징" /></div>
+      </div>
+    </details>
+
+    <details open class="drama-editor">
+      <summary>드라마 · 회차 편집</summary>
+      <div class="section-body">
+        <div class="field-row"><div class="field"><label for="episodeSectionTitleInput">회차 섹션 제목</label><input id="episodeSectionTitleInput" type="text" value="회차" /></div><div class="field"><label for="episodeSectionNoteInput">오른쪽 문구</label><input id="episodeSectionNoteInput" type="text" value="시즌 1" /></div></div>
+        <div class="field"><label for="episodeCount">표시할 회차 수</label><select id="episodeCount"></select><div class="field-help">1개부터 12개까지 선택할 수 있습니다. 세로 모드에서는 휴대폰 OTT처럼 한 줄씩 길게 표시됩니다.</div></div>
+        <div id="episodeEditors"></div>
+      </div>
+    </details>
+
+    <details open class="movie-editor mode-hidden">
+      <summary>영화 · 추천 콘텐츠 편집</summary>
+      <div class="section-body">
+        <div class="field-row"><div class="field"><label for="movieSectionTitleInput">추천 섹션 제목</label><input id="movieSectionTitleInput" type="text" value="비슷한 콘텐츠" /></div><div class="field"><label for="movieSectionNoteInput">오른쪽 문구</label><input id="movieSectionNoteInput" type="text" value="추천 작품" /></div></div>
+        <div class="field"><label for="recommendCount">추천 콘텐츠 수</label><select id="recommendCount"></select><div class="field-help">기본값은 3개입니다. 2개부터 8개까지 선택할 수 있으며, 가로 모드에서는 3열 카드로, 세로 모드에서는 휴대폰용 가로 목록으로 자동 변환됩니다.</div></div>
+        <div id="recommendEditors"></div>
+      </div>
+    </details>
+
+    <details>
+      <summary>하단 크레딧</summary>
+      <div class="section-body">
+        <div class="field"><label>제작 크레딧 · 고정</label><input type="text" value="Made by @BAKHA_cm" disabled /><div class="field-help">이 문구는 삭제하거나 수정할 수 없도록 고정되어 있습니다.</div></div>
+        <div class="field"><label for="artistInput">맨 오른쪽 아래 · 일러스트레이터 이름</label><input id="artistInput" type="text" value="ILLUST. @artist" placeholder="예: ILLUST. @artist / 일러스트레이터 홍길동" /><div class="field-help">커미션주·일러스트레이터 이름을 자유롭게 입력할 수 있습니다. 빈칸으로 두면 오른쪽 크레딧은 숨겨집니다.</div></div>
+      </div>
+    </details>
+  </aside>
+
+  <main class="workspace">
+    <div class="preview-bar"><span><strong>미리보기</strong> · <span id="modeInfo">가로 · 드라마</span></span><span id="sizeInfo">1400px 폭 PNG</span></div>
+    <div class="preview-viewport" id="previewViewport">
+      <div class="preview-scale" id="previewScale">
+      <article id="captureArea" class="screen-landscape content-drama">
+        <header class="ott-header">
+          <div class="head-left"><div class="brand" id="siteTitlePreview">SOLFLIX</div><nav class="nav-links"><span id="nav1Preview">홈</span><span id="nav2Preview">시리즈</span><span id="nav3Preview">영화</span><span id="nav4Preview">내가 찜한 콘텐츠</span></nav></div>
+          <div class="profile-pill"><div class="avatar" id="profileAvatar" aria-hidden="true"><img id="profileImagePreview" alt="" /></div><span id="profilePreview">USER PROFILE</span></div>
+        </header>
+
+        <section class="hero">
+          <div class="hero-bg" id="heroBg"></div><div class="hero-glow"></div>
+          <div class="hero-content">
+            <div class="original-label" id="originalPreview">A SOLFLIX ORIGINAL</div>
+            <h2 class="main-title" id="titlePreview">자정 이후에도</h2>
+            <div class="main-subtitle" id="subtitlePreview">끝난 이야기 바깥에서, 두 사람은 다시 서로를 선택한다.</div>
+            <div class="hero-meta"><span id="yearPreview">2026</span><span id="seasonPreview" class="drama-meta">시즌 1 · 12화</span><span class="quality-badge" id="qualityPreview">HD</span><span class="rating-badge" id="ratingPreview">15</span></div>
+            <div class="progress-wrap"><div class="progress-track"><div class="progress-value" id="progressPreview"></div></div><div class="progress-text" id="runtimePreview">총 64분 중 38분</div></div>
+            <div class="hero-actions"><div class="play-btn"><span class="play-icon"></span><span id="playPreview">재생</span></div><div class="ghost-btn"><span class="ghost-play-icon"></span><span id="watchPreview">같이 보기</span></div><div class="circle-btn" aria-hidden="true"><span class="plus-icon"></span></div><div class="circle-btn" id="favoritePreview" aria-hidden="true"><span class="heart-icon">♡</span></div></div>
+            <div class="mobile-actions">
+              <div class="mobile-action"><span class="ico">＋</span><span id="mobileAction1Preview">내가 찜한 리스트</span></div><div class="mobile-action"><span class="ico">♡</span><span id="mobileAction2Preview">평가</span></div><div class="mobile-action"><span class="ico">↗</span><span id="mobileAction3Preview">공유</span></div><div class="mobile-action"><span class="ico">⇩</span><span id="mobileAction4Preview">저장</span></div>
+            </div>
+            <p class="synopsis" id="synopsisPreview">원래의 세계와 이야기 속 세계 사이를 오가는 한 사람. 모두의 기억에서 사라지는 순간에도, 단 한 사람만은 그녀를 잊지 않는다. 자정이 되기 전까지 두 사람은 끝나지 않은 결말을 찾아야 한다.</p>
+          </div>
+          <aside class="hero-detail"><p id="castRow"><strong><span id="castLabelPreview">출연</span>:</strong> <span id="castPreview">이자헌, 정희솔</span></p><p id="genreRow"><strong><span id="genreLabelPreview">장르</span>:</strong> <span id="genrePreview">로맨스, 미스터리, 다크 판타지</span></p><p id="featureRow"><strong><span id="featureLabelPreview">작품 특징</span>:</strong> <span id="featurePreview">상상의 나래, 어두운, 감정적인</span></p></aside>
+        </section>
+
+        <section class="lower-section drama-only">
+          <div class="section-head"><h3 class="section-title" id="episodeSectionTitlePreview">회차</h3><div class="section-note" id="episodeSectionNotePreview">시즌 1</div></div>
+          <div class="episode-list" id="episodeList"></div>
+        </section>
+
+        <section class="lower-section movie-only">
+          <div class="section-head"><h3 class="section-title" id="movieSectionTitlePreview">비슷한 콘텐츠</h3><div class="section-note" id="movieSectionNotePreview">추천 작품</div></div>
+          <div class="recommend-grid" id="recommendGrid"></div>
+        </section>
+
+        <footer class="credit"><span class="fixed-credit">Made by @BAKHA_cm</span><span class="artist-credit" id="artistPreview">ILLUST. @artist</span></footer>
+      </article>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="export-overlay" id="exportOverlay"><div class="export-box"><div class="spinner"></div><strong>이미지 렌더링 중...</strong><div style="margin-top:6px;color:#9da1aa;font-size:12px">콘텐츠 수가 많으면 잠시 시간이 걸릴 수 있습니다.</div></div></div>
+
+<script>
+const $=s=>document.querySelector(s);const root=document.documentElement;
+const presets={red:'#e50914',blue:'#3d7cff',purple:'#8b5cf6',green:'#27b07d'};
+const episodeData=Array.from({length:12},(_,i)=>({title:`${i+1}. ${i+1}화`,runtime:`${52+i}분`,description:`${i+1}화의 줄거리와 장면 설명을 자유롭게 적어 주세요. 세로 모드에서는 휴대폰 OTT 회차 목록처럼 표시됩니다.`,image:'',imageX:50,imageY:50}));
+const recommendData=Array.from({length:8},(_,i)=>({title:["첫 번째 기록","잊힌 이름의 밤","함께 추락하는 법","자정의 에필로그","다섯 번째 가능성","여섯 번째 가능성","일곱 번째 가능성","여덟 번째 가능성"][i],duration:['1시간 48분','2시간 06분','2시간 21분','1시간 57분','1시간 44분','2시간 02분','1시간 51분','SPECIAL'][i],year:'2026',rating:i%2?'15':'12',quality:i===2?'4K':'HD',description:'추천 콘텐츠 설명을 자유롭게 적어 주세요. 가로 모드에서는 카드, 세로 모드에서는 휴대폰 목록으로 바뀝니다. 두 줄에서 세 줄 추천드립니다.',image:'',imageX:50,imageY:50}));
+
+function hexToRgb(hex){const v=hex.replace('#','');const x=v.length===3?v.split('').map(c=>c+c).join(''):v;const n=parseInt(x,16);return `${(n>>16)&255}, ${(n>>8)&255}, ${n&255}`}
+function setAccent(hex){root.style.setProperty('--accent',hex);root.style.setProperty('--accent-rgb',hexToRgb(hex));$('#accentColor').value=hex}
+function escapeHtml(t){return String(t).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;')}
+// 이미지 업로드는 브라우저의 기본 이미지 디코더를 우선 사용합니다.
+// PNG를 캔버스나 별도 디코더로 다시 가공하지 않기 때문에,
+// IDAT 조각이 많거나 투명도가 포함된 PNG도 원본 그대로 불러올 수 있습니다.
+function isBlobUrl(url){
+  return typeof url==='string' && url.startsWith('blob:');
+}
+function revokeImageUrl(url){
+  if(isBlobUrl(url)){
+    try{ URL.revokeObjectURL(url); }catch(_){ }
+  }
+}
+function browserCanOpenImage(url){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>resolve({width:img.naturalWidth,height:img.naturalHeight});
+    img.onerror=()=>reject(new Error('브라우저가 이 이미지 파일을 표시하지 못했습니다.'));
+    img.src=url;
+  });
+}
+async function sniffImageFormat(file){
+  try{
+    const bytes=new Uint8Array(await file.slice(0,32).arrayBuffer());
+    const ascii=String.fromCharCode(...bytes);
+    if(bytes.length>=8&&bytes[0]===0x89&&bytes[1]===0x50&&bytes[2]===0x4E&&bytes[3]===0x47&&bytes[4]===0x0D&&bytes[5]===0x0A&&bytes[6]===0x1A&&bytes[7]===0x0A)return 'png';
+    if(bytes.length>=3&&bytes[0]===0xFF&&bytes[1]===0xD8&&bytes[2]===0xFF)return 'jpeg';
+    if(ascii.startsWith('GIF87a')||ascii.startsWith('GIF89a'))return 'gif';
+    if(ascii.slice(0,4)==='RIFF'&&ascii.slice(8,12)==='WEBP')return 'webp';
+    if(ascii.slice(4,8)==='ftyp'){
+      const brand=ascii.slice(8,20).toLowerCase();
+      if(brand.includes('avif')||brand.includes('avis'))return 'avif';
+      if(/heic|heix|hevc|hevx|mif1|msf1/.test(brand))return 'heic';
+    }
+  }catch(err){ console.warn('이미지 형식 확인을 건너뜁니다.',err); }
+  const name=(file.name||'').toLowerCase();
+  const mime=(file.type||'').toLowerCase();
+  if(mime.includes('png')||name.endsWith('.png'))return 'png';
+  if(mime.includes('jpeg')||mime.includes('jpg')||/\.jpe?g$/i.test(name))return 'jpeg';
+  if(mime.includes('webp')||name.endsWith('.webp'))return 'webp';
+  if(mime.includes('gif')||name.endsWith('.gif'))return 'gif';
+  if(mime.includes('avif')||name.endsWith('.avif'))return 'avif';
+  if(/heic|heif/.test(mime)||/\.(heic|heif)$/i.test(name))return 'heic';
+  return 'unknown';
+}
+async function readImage(file){
+  if(!file) throw new Error('선택된 이미지가 없습니다.');
+  const format=await sniffImageFormat(file);
+  let blob=file;
+
+  if(format==='heic'){
+    if(typeof window.heic2any!=='function'){
+      throw new Error('HEIC/HEIF 변환 모듈을 불러오지 못했습니다. 인터넷 연결을 확인하거나 JPG/PNG 파일을 사용해 주세요.');
+    }
+    try{
+      const converted=await window.heic2any({blob:file,toType:'image/jpeg',quality:.94});
+      blob=Array.isArray(converted)?converted[0]:converted;
+    }catch(err){
+      console.error(err);
+      throw new Error('HEIC/HEIF 이미지를 변환하지 못했습니다. JPG 또는 PNG로 변환한 뒤 다시 시도해 주세요.');
+    }
+  }
+
+  // PNG/JPG/WEBP 등은 원본 Blob URL을 사용합니다. 큰 Base64 문자열을
+  // data-* 속성에 넣지 않아 브라우저별 길이·메모리 문제도 피할 수 있습니다.
+  const url=URL.createObjectURL(blob);
+  try{
+    await browserCanOpenImage(url);
+    return url;
+  }catch(err){
+    revokeImageUrl(url);
+    console.error(err);
+    throw new Error('이미지 파일은 선택되었지만 브라우저가 표시하지 못했습니다. 파일을 다시 저장한 뒤 시도해 주세요.');
+  }
+}
+function showImageUploadError(error){
+  console.error(error);
+  alert(error?.message||'이미지를 불러오지 못했습니다. 다른 파일로 다시 시도해 주세요.');
+}
+
+// 회차 및 추천 콘텐츠의 썸네일은 object-fit에 의존하지 않습니다.
+// 원본 이미지 비율과 16:9 프레임 비율을 비교한 뒤, 빈 공간 없이 프레임을
+// 덮는 실제 너비/높이를 계산합니다. 이 방식은 PNG 저장 시에도 비율이 유지됩니다.
+function coverImageStyle(item, frameRatio=16/9){
+  const imageWidth=Math.max(1,Number(item.imageWidth)||16);
+  const imageHeight=Math.max(1,Number(item.imageHeight)||9);
+  const imageRatio=imageWidth/imageHeight;
+  const x=Math.max(0,Math.min(100,Number(item.imageX ?? 50)))/100;
+  const y=Math.max(0,Math.min(100,Number(item.imageY ?? 50)))/100;
+
+  if(imageRatio>=frameRatio){
+    const widthPercent=(imageRatio/frameRatio)*100;
+    const leftPercent=-(widthPercent-100)*x;
+    return `width:${widthPercent.toFixed(5)}%;height:100%;left:${leftPercent.toFixed(5)}%;top:0;`;
+  }
+
+  const heightPercent=(frameRatio/imageRatio)*100;
+  const topPercent=-(heightPercent-100)*y;
+  return `width:100%;height:${heightPercent.toFixed(5)}%;left:0;top:${topPercent.toFixed(5)}%;`;
+}
+function bindText(inputId,previewId,after){const i=$('#'+inputId),p=$('#'+previewId);const u=()=>{p.textContent=i.value;p.classList.toggle('is-empty',!i.value.trim());if(after)after(i.value)};i.addEventListener('input',u);u()}
+function updateDetailRows(){[['castInput','castRow'],['genreInput','genreRow'],['featureInput','featureRow']].forEach(([a,b])=>$('#'+b).classList.toggle('is-empty',!$('#'+a).value.trim()))}
+
+for(let i=1;i<=12;i++)$('#episodeCount').insertAdjacentHTML('beforeend',`<option value="${i}" ${i===4?'selected':''}>${i}개</option>`);
+for(let i=2;i<=8;i++)$('#recommendCount').insertAdjacentHTML('beforeend',`<option value="${i}" ${i===3?'selected':''}>${i}개</option>`);
+
+function updateMode(){
+  const screen=$('#screenMode').value,content=$('#contentMode').value,c=$('#captureArea');
+  c.classList.toggle('screen-landscape',screen==='landscape');
+  c.classList.toggle('screen-portrait',screen==='portrait');
+  c.classList.toggle('content-drama',content==='drama');
+  c.classList.toggle('content-movie',content==='movie');
+  root.style.setProperty('--capture-width',screen==='portrait'?'760px':'1400px');
+  $('.drama-editor').classList.toggle('mode-hidden',content!=='drama');
+  $('.movie-editor').classList.toggle('mode-hidden',content!=='movie');
+  $('#seasonField').classList.toggle('mode-hidden',content==='movie');
+  $('#modeInfo').textContent=`${screen==='portrait'?'세로 · 휴대폰':'가로 · 패드/컴퓨터'} · ${content==='drama'?'드라마':'영화'}`;
+  $('#sizeInfo').textContent=screen==='portrait'?'760px 기준 · 2× 고화질 PNG':'1400px 기준 · 2× 고화질 PNG';
+  updateHeroBg();
+  scheduleRecommendationBodyEqualize();
+}
+
+function updateHeaderVisibility(){
+  const hidden=$('#headerVisibleSelect').value==='off';
+  $('#captureArea').classList.toggle('header-hidden',hidden);
+  requestAnimationFrame(updatePreviewScale);
+}
+
+function updateProfileVisibility(){
+  const hidden=$('#profileVisibleSelect').value==='off';
+  $('#captureArea').classList.toggle('profile-hidden',hidden);
+  requestAnimationFrame(updatePreviewScale);
+}
+
+function updateLowerSectionVisibility(){
+  const hidden=$('#lowerSectionVisibleSelect').value==='off';
+  $('#captureArea').classList.toggle('lower-hidden',hidden);
+  requestAnimationFrame(updatePreviewScale);
+}
+
+/* 저장용 캔버스는 항상 실제 출력 폭으로 유지하고, 미리보기에서만 비율을 축소합니다. */
+function updatePreviewScale(){
+  if(document.body.classList.contains('exporting')) return;
+  const workspace=$('.workspace');
+  const viewport=$('#previewViewport');
+  const scaleWrap=$('#previewScale');
+  const capture=$('#captureArea');
+  if(!workspace||!viewport||!scaleWrap||!capture) return;
+  const wsStyle=getComputedStyle(workspace);
+  const available=Math.max(280,workspace.clientWidth-parseFloat(wsStyle.paddingLeft)-parseFloat(wsStyle.paddingRight));
+  const naturalWidth=$('#screenMode').value==='portrait'?760:1400;
+  const scale=Math.min(1,available/naturalWidth);
+  scaleWrap.style.width=naturalWidth+'px';
+  scaleWrap.style.transform=`scale(${scale})`;
+  viewport.style.width=(naturalWidth*scale)+'px';
+  viewport.style.height=(capture.offsetHeight*scale)+'px';
+}
+
+let heroImageUrl='';
+
+function updateHeroBg(){
+  const el=$('#heroBg'),url=heroImageUrl,x=$('#heroX').value,y=$('#heroY').value,b=$('#heroBrightness').value,s=$('#heroSaturation').value;
+  const screen=$('#screenMode').value;
+  const edgePct=Number($('#heroEdgeDarknessInput')?.value||35);
+  const edge=Math.max(0,Math.min(1,edgePct/100));
+  const img=url?`url("${url}")`:'none';
+  $('#heroEdgeDarknessValue').textContent=edgePct+'%';
+
+  if(screen==='portrait'){
+    const bottom=(.22*edge).toFixed(3),top=(.05*edge).toFixed(3);
+    el.style.backgroundImage=`linear-gradient(0deg,rgba(0,0,0,${bottom}),rgba(0,0,0,${top})), ${img}, radial-gradient(circle at 65% 30%,rgba(var(--accent-rgb),.20),transparent 28rem), linear-gradient(135deg,#343943,#15181d)`;
+    el.style.backgroundPosition=`center, ${x}% ${y}%, center, center`;
+  }else{
+    const a1=(.88*edge).toFixed(3),a2=(.66*edge).toFixed(3),a3=(.18*edge).toFixed(3),a4=(.42*edge).toFixed(3),bottom=(.26*edge).toFixed(3);
+    el.style.backgroundImage=`linear-gradient(90deg,rgba(5,6,8,${a1}) 0%,rgba(5,6,8,${a2}) 34%,rgba(5,6,8,${a3}) 68%,rgba(5,6,8,${a4}) 100%),linear-gradient(0deg,rgba(15,16,18,${bottom}) 0%,transparent 32%),${img},radial-gradient(circle at 72% 38%,rgba(var(--accent-rgb),.20),transparent 31rem),linear-gradient(135deg,#31353f,#11141a 56%,#090a0d)`;
+    el.style.backgroundPosition=`center,center,${x}% ${y}%,center,center`;
+  }
+  el.style.backgroundSize='cover';el.style.backgroundRepeat='no-repeat';el.style.filter=`brightness(${b}%) saturate(${s}%)`;
+}
+
+function updateReadabilityStrength(){
+  const pct=Number($('#readabilityStrengthInput')?.value||35);
+  const strength=Math.max(0,Math.min(1,pct/100));
+  const veil=(.14*strength).toFixed(3);
+  const veilSoft=(.10*strength).toFixed(3);
+  const veilShadow=(.11*strength).toFixed(3);
+  const textShadow=(.76*strength).toFixed(3);
+  const textShadowSoft=(.42*strength).toFixed(3);
+  root.style.setProperty('--info-veil-alpha',veil);
+  root.style.setProperty('--info-veil-alpha-soft',veilSoft);
+  root.style.setProperty('--info-veil-shadow-alpha',veilShadow);
+  root.style.setProperty('--info-text-shadow-alpha',textShadow);
+  root.style.setProperty('--info-text-shadow-soft-alpha',textShadowSoft);
+  $('#readabilityStrengthValue').textContent=pct+'%';
+}
+
+function updateHeroInfoScale(){
+  const pct=Number($('#heroInfoScaleInput').value||100);
+  const scale=pct/100;
+  root.style.setProperty('--hero-info-base-size',(16*scale)+'px');
+  root.style.setProperty('--hero-content-max-width',(760*scale)+'px');
+  $('#heroInfoScaleValue').textContent=pct+'%';
+  updateTitleStyle();
+  requestAnimationFrame(updatePreviewScale);
+}
+function updateHeroDetailScale(){
+  const pct=Number($('#heroDetailScaleInput').value||100);
+  const scale=pct/100;
+  root.style.setProperty('--hero-detail-base-size',(14*scale)+'px');
+  $('#heroDetailScaleValue').textContent=pct+'%';
+  requestAnimationFrame(updatePreviewScale);
+}
+function updateTitleStyle(){
+  const scale=Number($('#heroInfoScaleInput')?.value||100)/100;
+  root.style.setProperty('--title-size',(Number($('#titleSizeInput').value)*scale)+'px');
+  root.style.setProperty('--title-weight',$('#titleWeightInput').value);
+  root.style.setProperty('--title-spacing',$('#titleSpacingInput').value+'px');
+}
+function updateFavorite(){const m=$('#favoriteSelect').value,b=$('#favoritePreview'),icon=b.querySelector('.heart-icon');b.classList.toggle('is-empty',m==='hidden');b.classList.toggle('favorite-active',m==='on');if(icon)icon.textContent=m==='on'?'♥':'♡'}
+
+function renderEpisodeEditors(){const n=Number($('#episodeCount').value),h=$('#episodeEditors');h.innerHTML='';episodeData.slice(0,n).forEach((it,idx)=>{const w=document.createElement('div');w.className='item-editor';w.innerHTML=`<h4>회차 ${idx+1}</h4><label class="file-field"><input type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.heic,.heif" data-ep-image="${idx}"><strong>회차 썸네일 업로드</strong><span>16:9 권장</span></label><div class="image-position-controls"><div class="field-row"><div class="field"><label>이미지 좌우 위치</label><input type="range" min="0" max="100" value="${it.imageX ?? 50}" data-ep-position="imageX" data-index="${idx}"></div><div class="field"><label>이미지 상하 위치</label><input type="range" min="0" max="100" value="${it.imageY ?? 50}" data-ep-position="imageY" data-index="${idx}"></div></div><div class="field-help">이미지는 썸네일 영역을 빈틈없이 채운 상태로 이동됩니다. 가장자리로 움직여도 빈 공간이 생기지 않습니다.</div></div><div class="field"><label>회차 제목</label><input type="text" data-ep-field="title" data-index="${idx}" value="${escapeHtml(it.title)}"></div><div class="field"><label>시간</label><input type="text" data-ep-field="runtime" data-index="${idx}" value="${escapeHtml(it.runtime)}"></div><div class="field"><label>회차 소개</label><textarea data-ep-field="description" data-index="${idx}">${escapeHtml(it.description)}</textarea></div>`;h.appendChild(w)});
+  h.querySelectorAll('[data-ep-field]').forEach(x=>x.addEventListener('input',e=>{episodeData[+e.target.dataset.index][e.target.dataset.epField]=e.target.value;renderEpisodes()}));
+  h.querySelectorAll('[data-ep-position]').forEach(x=>x.addEventListener('input',e=>{const idx=+e.target.dataset.index;episodeData[idx][e.target.dataset.epPosition]=Number(e.target.value);renderEpisodes()}));
+  h.querySelectorAll('[data-ep-image]').forEach(x=>x.addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;const idx=+e.target.dataset.epImage;try{const next=await readImage(f);const meta=await browserCanOpenImage(next);const prev=episodeData[idx].image;episodeData[idx].image=next;episodeData[idx].imageWidth=meta.width;episodeData[idx].imageHeight=meta.height;renderEpisodes();revokeImageUrl(prev)}catch(err){showImageUploadError(err)}finally{e.target.value=''}}));
+}
+function renderEpisodes(){const n=Number($('#episodeCount').value),h=$('#episodeList');h.innerHTML='';episodeData.slice(0,n).forEach((it,idx)=>{const e=document.createElement('article');e.className='episode-item';const image=it.image?`<img src="${it.image}" alt="회차 ${idx+1}" style="${coverImageStyle(it)}">`:'';e.innerHTML=`<div class="episode-thumb">${image}<div class="episode-play" aria-hidden="true"></div></div><div class="episode-info"><div class="episode-top"><div class="episode-name">${escapeHtml(it.title)}</div><div class="episode-runtime">${escapeHtml(it.runtime)}</div></div><p class="episode-desc">${escapeHtml(it.description)}</p></div>`;h.appendChild(e)})}
+
+function renderRecommendEditors(){const n=Number($('#recommendCount').value),h=$('#recommendEditors');h.innerHTML='';recommendData.slice(0,n).forEach((it,idx)=>{const w=document.createElement('div');w.className='item-editor';w.innerHTML=`<h4>추천 콘텐츠 ${idx+1}</h4><label class="file-field"><input type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.heic,.heif" data-rec-image="${idx}"><strong>썸네일 업로드</strong><span>16:9 권장</span></label><div class="image-position-controls"><div class="field-row"><div class="field"><label>이미지 좌우 위치</label><input type="range" min="0" max="100" value="${it.imageX ?? 50}" data-rec-position="imageX" data-index="${idx}"></div><div class="field"><label>이미지 상하 위치</label><input type="range" min="0" max="100" value="${it.imageY ?? 50}" data-rec-position="imageY" data-index="${idx}"></div></div><div class="field-help">이미지는 썸네일 영역을 빈틈없이 채운 상태로 이동됩니다. 가장자리로 움직여도 빈 공간이 생기지 않습니다.</div></div><div class="field"><label>제목</label><input type="text" data-rec-field="title" data-index="${idx}" value="${escapeHtml(it.title)}"></div><div class="field-row"><div class="field"><label>시간</label><input type="text" data-rec-field="duration" data-index="${idx}" value="${escapeHtml(it.duration)}"></div><div class="field"><label>연도</label><input type="text" data-rec-field="year" data-index="${idx}" value="${escapeHtml(it.year)}"></div></div><div class="field-row"><div class="field"><label>등급</label><input type="text" data-rec-field="rating" data-index="${idx}" value="${escapeHtml(it.rating)}"></div><div class="field"><label>화질</label><input type="text" data-rec-field="quality" data-index="${idx}" value="${escapeHtml(it.quality)}"></div></div><div class="field"><label>소개</label><textarea rows="3" style="min-height:68px" data-rec-field="description" data-index="${idx}">${escapeHtml(it.description)}</textarea><div class="field-help">두 줄에서 세 줄 정도의 설명을 추천드립니다.</div></div>`;h.appendChild(w)});
+  h.querySelectorAll('[data-rec-field]').forEach(x=>x.addEventListener('input',e=>{recommendData[+e.target.dataset.index][e.target.dataset.recField]=e.target.value;renderRecommendations()}));
+  h.querySelectorAll('[data-rec-position]').forEach(x=>x.addEventListener('input',e=>{const idx=+e.target.dataset.index;recommendData[idx][e.target.dataset.recPosition]=Number(e.target.value);renderRecommendations()}));
+  h.querySelectorAll('[data-rec-image]').forEach(x=>x.addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;const idx=+e.target.dataset.recImage;try{const next=await readImage(f);const meta=await browserCanOpenImage(next);const prev=recommendData[idx].image;recommendData[idx].image=next;recommendData[idx].imageWidth=meta.width;recommendData[idx].imageHeight=meta.height;renderRecommendations();revokeImageUrl(prev)}catch(err){showImageUploadError(err)}finally{e.target.value=''}}));
+}
+function renderRecommendations(){const n=Number($('#recommendCount').value),h=$('#recommendGrid');h.innerHTML='';recommendData.slice(0,n).forEach((it,idx)=>{const c=document.createElement('article');c.className='recommend-card';const image=it.image?`<img src="${it.image}" alt="추천 ${idx+1}" style="${coverImageStyle(it)}">`:'';const meta=[it.rating?`<span class="rating-badge">${escapeHtml(it.rating)}</span>`:'',it.quality?`<span class="quality-badge">${escapeHtml(it.quality)}</span>`:'',it.year?`<span>${escapeHtml(it.year)}</span>`:'',it.duration?`<span>${escapeHtml(it.duration)}</span>`:''].join('');c.innerHTML=`<div class="card-image">${image}${it.duration?`<div class="duration">${escapeHtml(it.duration)}</div>`:''}${it.title?`<div class="card-title-overlay">${escapeHtml(it.title)}</div>`:''}</div><div class="card-body" data-title="${escapeHtml(it.title)}"><div class="card-meta">${meta}</div>${it.description?`<p class="card-desc">${escapeHtml(it.description)}</p>`:''}</div>`;h.appendChild(c)});scheduleRecommendationBodyEqualize()}
+
+function equalizeRecommendationBodies(){
+  const bodies=[...document.querySelectorAll('#recommendGrid .card-body')];
+  // 세로 모드는 휴대폰 목록 형태이므로 각 항목이 내용만큼만 높이를 사용합니다.
+  bodies.forEach(body=>{body.style.height='auto';body.style.minHeight='0'});
+  if($('#screenMode').value!=='landscape'||$('#contentMode').value!=='movie'||!bodies.length)return;
+  const maxHeight=Math.max(...bodies.map(body=>Math.ceil(body.scrollHeight)));
+  bodies.forEach(body=>{body.style.height=maxHeight+'px'});
+}
+
+function scheduleRecommendationBodyEqualize(){
+  requestAnimationFrame(()=>{
+    equalizeRecommendationBodies();
+    updatePreviewScale();
+  });
+}
+
+// <details>를 접거나 펼친 뒤에도 왼쪽 편집창의 실제 scrollHeight를 다시 기준으로 사용합니다.
+// sticky+overflow 조합에서 발생하던 스크롤 고착을 피하고, 열린 섹션이 화면 아래에 있으면 자연스럽게 보이도록 이동합니다.
+const editorPanel=$('.editor');
+if(editorPanel){
+  editorPanel.querySelectorAll('details').forEach(detail=>{
+    detail.addEventListener('toggle',()=>{
+      requestAnimationFrame(()=>{
+        const maxScroll=Math.max(0,editorPanel.scrollHeight-editorPanel.clientHeight);
+        if(editorPanel.scrollTop>maxScroll) editorPanel.scrollTop=maxScroll;
+        if(detail.open){
+          const r=detail.getBoundingClientRect();
+          const er=editorPanel.getBoundingClientRect();
+          if(r.top<er.top||r.top>er.bottom-80){
+            const target=editorPanel.scrollTop+(r.top-er.top)-12;
+            editorPanel.scrollTo({top:Math.max(0,Math.min(target,maxScroll)),behavior:'auto'});
+          }
+        }
+      });
+    });
+  });
+}
+
+$('#screenMode').addEventListener('change',updateMode);$('#contentMode').addEventListener('change',updateMode);$('#headerVisibleSelect').addEventListener('change',updateHeaderVisibility);$('#profileVisibleSelect').addEventListener('change',updateProfileVisibility);$('#lowerSectionVisibleSelect').addEventListener('change',updateLowerSectionVisibility);
+$('#themePreset').addEventListener('change',e=>{const c=presets[e.target.value];if(c){setAccent(c);root.style.setProperty('--bar-color',c);$('#barColor').value=c}});
+$('#accentColor').addEventListener('input',e=>{$('#themePreset').value='custom';setAccent(e.target.value)});$('#barColor').addEventListener('input',e=>root.style.setProperty('--bar-color',e.target.value));$('#barTrackColor').addEventListener('input',e=>root.style.setProperty('--bar-track',e.target.value));
+$('#heroImageInput').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{const next=await readImage(f);const prev=heroImageUrl;heroImageUrl=next;updateHeroBg();revokeImageUrl(prev)}catch(err){showImageUploadError(err)}finally{e.target.value=''}});
+let profileImageUrl='';
+function updateProfileImagePosition(){
+  const x=Number($('#profileX')?.value??50);
+  const y=Number($('#profileY')?.value??50);
+  root.style.setProperty('--profile-x',x+'%');
+  root.style.setProperty('--profile-y',y+'%');
+}
+$('#profileImageInput').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{const next=await readImage(f);const prev=profileImageUrl;profileImageUrl=next;$('#profileImagePreview').src=next;$('#profileAvatar').classList.add('has-image');updateProfileImagePosition();revokeImageUrl(prev)}catch(err){showImageUploadError(err)}finally{e.target.value=''}});
+['profileX','profileY'].forEach(id=>$('#'+id).addEventListener('input',updateProfileImagePosition));
+['heroX','heroY','heroBrightness','heroSaturation','heroEdgeDarknessInput'].forEach(id=>$('#'+id).addEventListener('input',updateHeroBg));
+$('#readabilityStrengthInput').addEventListener('input',updateReadabilityStrength);
+$('#heroInfoScaleInput').addEventListener('input',updateHeroInfoScale);$('#heroDetailScaleInput').addEventListener('input',updateHeroDetailScale);['titleSizeInput','titleWeightInput','titleSpacingInput'].forEach(id=>$('#'+id).addEventListener('input',updateTitleStyle));$('#progressInput').addEventListener('input',e=>$('#progressPreview').style.width=e.target.value+'%');$('#favoriteSelect').addEventListener('change',updateFavorite);
+$('#episodeCount').addEventListener('change',()=>{renderEpisodeEditors();renderEpisodes()});$('#recommendCount').addEventListener('change',()=>{renderRecommendEditors();renderRecommendations()});
+
+[['siteTitleInput','siteTitlePreview'],['originalInput','originalPreview'],['titleInput','titlePreview'],['subtitleInput','subtitlePreview'],['yearInput','yearPreview'],['seasonInput','seasonPreview'],['ratingInput','ratingPreview'],['qualityInput','qualityPreview'],['runtimeInput','runtimePreview'],['synopsisInput','synopsisPreview'],['castInput','castPreview'],['genreInput','genrePreview'],['featureInput','featurePreview'],['nav1Input','nav1Preview'],['nav2Input','nav2Preview'],['nav3Input','nav3Preview'],['nav4Input','nav4Preview'],['profileInput','profilePreview'],['playInput','playPreview'],['watchInput','watchPreview'],['mobileAction1Input','mobileAction1Preview'],['mobileAction2Input','mobileAction2Preview'],['mobileAction3Input','mobileAction3Preview'],['mobileAction4Input','mobileAction4Preview'],['castLabelInput','castLabelPreview'],['genreLabelInput','genreLabelPreview'],['featureLabelInput','featureLabelPreview'],['episodeSectionTitleInput','episodeSectionTitlePreview'],['episodeSectionNoteInput','episodeSectionNotePreview'],['movieSectionTitleInput','movieSectionTitlePreview'],['movieSectionNoteInput','movieSectionNotePreview'],['artistInput','artistPreview']].forEach(([a,b])=>bindText(a,b,['castInput','genreInput','featureInput'].includes(a)?updateDetailRows:null));
+
+$('#resetBtn').addEventListener('click',()=>{if(confirm('입력한 내용을 예시 상태로 되돌리시겠습니까?'))location.reload()});
+function blobFromCanvas(canvas){return new Promise((res,rej)=>canvas.toBlob(b=>b?res(b):rej(new Error('PNG 변환 실패')),'image/png',1))}
+
+/*
+  html2canvas는 작은 flex 요소 안의 글자 baseline을 브라우저와 다르게 계산하는 경우가 있습니다.
+  재생/같이 보기/원형 버튼/등급·화질 배지는 저장할 때만 SVG 스냅샷으로 바꿉니다.
+  SVG 내부에서는 도형과 글자의 중심 좌표를 직접 지정하므로 저장 시 아래로 밀리지 않습니다.
+*/
+function svgEscape(value){
+  return String(value ?? '')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'",'&#39;');
+}
+function numberPx(value,fallback=0){
+  const n=parseFloat(value);
+  return Number.isFinite(n)?n:fallback;
+}
+function textWidthForElement(el,text){
+  const cs=getComputedStyle(el);
+  const canvas=textWidthForElement.canvas||(textWidthForElement.canvas=document.createElement('canvas'));
+  const ctx=canvas.getContext('2d');
+  ctx.font=`${cs.fontStyle||'normal'} ${cs.fontWeight||'400'} ${cs.fontSize||'16px'} ${cs.fontFamily||'sans-serif'}`;
+  return ctx.measureText(text).width;
+}
+function makeSvgDataUrl(svg){
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+}
+function roundedRectSvg(width,height,cs){
+  const radius=Math.min(numberPx(cs.borderTopLeftRadius),width/2,height/2);
+  const borderWidth=numberPx(cs.borderTopWidth);
+  const borderColor=cs.borderTopColor||'transparent';
+  const bg=cs.backgroundColor||'transparent';
+  const inset=borderWidth/2;
+  return `<rect x="${inset}" y="${inset}" width="${Math.max(0,width-borderWidth)}" height="${Math.max(0,height-borderWidth)}" rx="${Math.max(0,radius-inset)}" ry="${Math.max(0,radius-inset)}" fill="${svgEscape(bg)}" stroke="${svgEscape(borderWidth?borderColor:'transparent')}" stroke-width="${borderWidth}"/>`;
+}
+function controlSvgForElement(el){
+  const rect=el.getBoundingClientRect();
+  const width=Math.max(1,Math.round(rect.width*100)/100);
+  const height=Math.max(1,Math.round(rect.height*100)/100);
+  const cs=getComputedStyle(el);
+  const fontSize=numberPx(cs.fontSize,16);
+  const fontFamily=svgEscape(cs.fontFamily||'sans-serif');
+  const fontWeight=svgEscape(cs.fontWeight||'700');
+  const color=svgEscape(cs.color||'#fff');
+  const opacity=Number.isFinite(parseFloat(cs.opacity))?parseFloat(cs.opacity):1;
+  let body=roundedRectSvg(width,height,cs);
+  const centerY=height/2;
+
+  if(el.classList.contains('play-btn')||el.classList.contains('ghost-btn')){
+    const textEl=el.querySelector('.play-icon')?.nextElementSibling || el.querySelector('.ghost-play-icon')?.nextElementSibling || el.querySelector('span:last-child');
+    const text=(textEl?.textContent||'').trim();
+    const textW=textWidthForElement(el,text);
+    const iconW=el.classList.contains('play-btn')?fontSize*.88:fontSize*.68;
+    const iconH=el.classList.contains('play-btn')?fontSize*1.12:fontSize*.86;
+    const gap=el.classList.contains('play-btn')?fontSize*.62:fontSize*.50;
+    const groupW=iconW+gap+textW;
+    const startX=(width-groupW)/2;
+    const triColor=el.classList.contains('play-btn')?'#090a0c':color;
+    const x1=startX;
+    const x2=startX;
+    const x3=startX+iconW;
+    body+=`<path d="M ${x1} ${centerY-iconH/2} L ${x2} ${centerY+iconH/2} L ${x3} ${centerY} Z" fill="${triColor}"/>`;
+    body+=`<text x="${startX+iconW+gap}" y="${centerY}" fill="${color}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}" dominant-baseline="central" alignment-baseline="middle">${svgEscape(text)}</text>`;
+  }else if(el.classList.contains('circle-btn')){
+    if(el.querySelector('.plus-icon')){
+      const arm=Math.min(width,height)*.19;
+      const stroke=Math.max(2,fontSize*.12);
+      body+=`<line x1="${width/2-arm}" y1="${centerY}" x2="${width/2+arm}" y2="${centerY}" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"/>`;
+      body+=`<line x1="${width/2}" y1="${centerY-arm}" x2="${width/2}" y2="${centerY+arm}" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"/>`;
+    }else if(el.querySelector('.heart-icon')){
+      const filled=el.classList.contains('favorite-active');
+      // Material heart path를 24×24 좌표계에서 사용합니다.
+      const path=filled
+        ? 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'
+        : 'M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z';
+      const size=Math.min(width,height)*.48;
+      const scale=size/24;
+      const tx=(width-size)/2;
+      const ty=(height-size)/2;
+      body+=`<g transform="translate(${tx} ${ty}) scale(${scale})"><path d="${path}" fill="${color}"/></g>`;
+    }
+  }else if(el.classList.contains('rating-badge')||el.classList.contains('quality-badge')){
+    const text=(el.textContent||'').trim();
+    body+=`<text x="${width/2}" y="${centerY}" fill="${color}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}" text-anchor="middle" dominant-baseline="central" alignment-baseline="middle">${svgEscape(text)}</text>`;
+  }else{
+    return null;
+  }
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="opacity:${opacity};overflow:visible">${body}</svg>`;
+  return {url:makeSvgDataUrl(svg),width,height};
+}
+
+function plainTextSvgForElement(el){
+  const rect=el.getBoundingClientRect();
+  const width=Math.max(1,Math.round(rect.width*100)/100);
+  const height=Math.max(1,Math.round(rect.height*100)/100);
+  const cs=getComputedStyle(el);
+  const fontSize=numberPx(cs.fontSize,16);
+  const fontFamily=svgEscape(cs.fontFamily||'sans-serif');
+  const fontWeight=svgEscape(cs.fontWeight||'400');
+  const color=svgEscape(cs.color||'#fff');
+  const text=svgEscape((el.textContent||'').trim());
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><text x="0" y="${height/2}" fill="${color}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}" dominant-baseline="central" alignment-baseline="middle">${text}</text></svg>`;
+  return {url:makeSvgDataUrl(svg),width,height};
+}
+function makeSnapshotImage(cloneDoc,snapshot){
+  const img=cloneDoc.createElement('img');
+  img.src=snapshot.url;
+  img.alt='';
+  img.setAttribute('aria-hidden','true');
+  img.style.display='block';
+  img.style.width=snapshot.width+'px';
+  img.style.height=snapshot.height+'px';
+  img.style.minWidth=snapshot.width+'px';
+  img.style.minHeight=snapshot.height+'px';
+  img.style.maxWidth=snapshot.width+'px';
+  img.style.maxHeight=snapshot.height+'px';
+  img.style.margin='0';
+  img.style.padding='0';
+  img.style.objectFit='fill';
+  return img;
+}
+function freezeExportGroup(sourceGroup,cloneGroup,cloneDoc){
+  if(!sourceGroup||!cloneGroup)return;
+  const groupRect=sourceGroup.getBoundingClientRect();
+  if(!groupRect.width||!groupRect.height)return;
+  const sourceChildren=[...sourceGroup.children].filter(el=>{
+    const r=el.getBoundingClientRect();
+    return r.width>0&&r.height>0&&getComputedStyle(el).display!=='none';
+  });
+  cloneGroup.innerHTML='';
+  cloneGroup.style.position='relative';
+  cloneGroup.style.display='block';
+  cloneGroup.style.boxSizing='border-box';
+  cloneGroup.style.width=groupRect.width+'px';
+  cloneGroup.style.height=groupRect.height+'px';
+  cloneGroup.style.minWidth=groupRect.width+'px';
+  cloneGroup.style.minHeight=groupRect.height+'px';
+  cloneGroup.style.maxWidth=groupRect.width+'px';
+  cloneGroup.style.maxHeight=groupRect.height+'px';
+  cloneGroup.style.padding='0';
+
+  sourceChildren.forEach(child=>{
+    const childRect=child.getBoundingClientRect();
+    const snapshot=child.matches('.play-btn,.ghost-btn,.circle-btn,.rating-badge,.quality-badge')
+      ? controlSvgForElement(child)
+      : plainTextSvgForElement(child);
+    if(!snapshot)return;
+    const img=makeSnapshotImage(cloneDoc,snapshot);
+    img.style.position='absolute';
+    img.style.left=(childRect.left-groupRect.left)+'px';
+    img.style.top=(childRect.top-groupRect.top)+'px';
+    img.style.flex='none';
+    cloneGroup.appendChild(img);
+  });
+}
+function freezeMainControlsForExport(cloneRoot,sourceRoot,cloneDoc){
+  freezeExportGroup(sourceRoot.querySelector('.hero-actions'),cloneRoot.querySelector('.hero-actions'),cloneDoc);
+  freezeExportGroup(sourceRoot.querySelector('.hero-meta'),cloneRoot.querySelector('.hero-meta'),cloneDoc);
+}
+function replaceExportControlsWithSvg(cloneRoot,sourceRoot,cloneDoc){
+  const selectors=['.play-btn','.ghost-btn','.circle-btn','.rating-badge','.quality-badge'];
+  selectors.forEach(selector=>{
+    /*
+      메인 hero-actions / hero-meta는 freezeMainControlsForExport()에서 먼저 SVG로 교체됩니다.
+      따라서 여기서는 메인 영역을 제외한 요소끼리만 순서를 맞춰야 합니다.
+      이전 버전은 source 쪽 배열에 메인 배지가 남아 있어 첫 번째 추천 카드가
+      메인 15세 배지의 크기/위치를 잘못 물려받는 문제가 있었습니다.
+    */
+    const originals=[...sourceRoot.querySelectorAll(selector)].filter(el=>!el.closest('.hero-actions,.hero-meta'));
+    const clones=[...cloneRoot.querySelectorAll(selector)].filter(el=>!el.closest('.hero-actions,.hero-meta'));
+
+    clones.forEach((clone,i)=>{
+      const original=originals[i];
+      if(!original)return;
+      const snapshot=controlSvgForElement(original);
+      if(!snapshot)return;
+      const img=makeSnapshotImage(cloneDoc,snapshot);
+      img.style.flex='0 0 auto';
+      img.style.alignSelf='center';
+      clone.replaceWith(img);
+    });
+  });
+}
+
+async function downloadImage(){
+  const overlay=$('#exportOverlay'),capture=$('#captureArea'),screen=$('#screenMode').value;
+  overlay.classList.add('show');
+  let exportHost=null;
+  try{
+    document.body.classList.add('exporting');
+    await document.fonts.ready;
+
+    const pendingImages=[...capture.querySelectorAll('img')].map(img=>{
+      if(img.complete&&img.naturalWidth)return Promise.resolve();
+      return typeof img.decode==='function'?img.decode().catch(()=>{}):Promise.resolve();
+    });
+    if(heroImageUrl) pendingImages.push(browserCanOpenImage(heroImageUrl).catch(()=>{}));
+    episodeData.slice(0,Number($('#episodeCount').value)).forEach(item=>{if(item.image)pendingImages.push(browserCanOpenImage(item.image).catch(()=>{}))});
+    recommendData.slice(0,Number($('#recommendCount').value)).forEach(item=>{if(item.image)pendingImages.push(browserCanOpenImage(item.image).catch(()=>{}))});
+    await Promise.all(pendingImages);
+    equalizeRecommendationBodies();
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+
+    const width=capture.offsetWidth;
+    const height=capture.scrollHeight;
+
+    /*
+      html2canvas 내부 clone 단계에서 flex/text 위치가 다시 계산되지 않도록,
+      먼저 브라우저 DOM 안에 실제 저장용 복제본을 만들어 레이아웃을 확정합니다.
+    */
+    exportHost=document.createElement('div');
+    exportHost.setAttribute('aria-hidden','true');
+    exportHost.style.position='fixed';
+    exportHost.style.left='-100000px';
+    exportHost.style.top='0';
+    exportHost.style.width=width+'px';
+    exportHost.style.height='auto';
+    exportHost.style.pointerEvents='none';
+    exportHost.style.opacity='1';
+    exportHost.style.zIndex='-99999';
+
+    const exportClone=capture.cloneNode(true);
+    exportClone.style.width=width+'px';
+    exportClone.style.maxWidth='none';
+    exportClone.style.borderRadius='0';
+    exportClone.style.border='0';
+    exportClone.style.boxShadow='none';
+    exportClone.style.transform='none';
+    exportClone.style.margin='0';
+    exportHost.appendChild(exportClone);
+    document.body.appendChild(exportHost);
+
+    // 메인 버튼/배지는 부모 그룹 전체를 미리보기의 실제 좌표 그대로 고정합니다.
+    freezeMainControlsForExport(exportClone,capture,document);
+    // 추천 콘텐츠 등에 있는 작은 배지도 SVG로 바꾸어 같은 baseline 문제를 예방합니다.
+    replaceExportControlsWithSvg(exportClone,capture,document);
+
+    const cloneImages=[...exportClone.querySelectorAll('img')];
+    await Promise.all(cloneImages.map(img=>{
+      if(img.complete&&img.naturalWidth)return Promise.resolve();
+      return typeof img.decode==='function'?img.decode().catch(()=>{}):new Promise(resolve=>{
+        img.onload=img.onerror=()=>resolve();
+      });
+    }));
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+
+    const finalHeight=Math.ceil(exportClone.scrollHeight);
+    const canvas=await html2canvas(exportClone,{
+      backgroundColor:'#000',
+      scale:2,
+      useCORS:true,
+      allowTaint:false,
+      logging:false,
+      imageTimeout:15000,
+      windowWidth:width,
+      windowHeight:finalHeight,
+      width,
+      height:finalHeight,
+      scrollX:0,
+      scrollY:0,
+      onclone:d=>{
+        const cloned=d.querySelector('#captureArea');
+        if(!cloned)return;
+        cloned.style.width=width+'px';
+        cloned.style.maxWidth='none';
+        cloned.style.borderRadius='0';
+        cloned.style.border='0';
+        cloned.style.boxShadow='none';
+        cloned.style.transform='none';
+        // 저장용 복제본은 이미 SVG 이미지와 고정 좌표로 구성되어 있으므로 추가 보정을 하지 않습니다.
+      }
+    });
+
+    const blob=await blobFromCanvas(canvas);
+    const name=($('#titleInput').value.trim()||'ott-pair-archive').replace(/[\\/:*?"<>|]/g,'-').replace(/\s+/g,'_');
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`${name}_${screen}_${$('#contentMode').value}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }catch(e){
+    console.error(e);
+    alert('이미지 저장에 실패했습니다. 원본 이미지 크기를 조금 줄인 뒤 다시 시도해 주세요.');
+  }finally{
+    if(exportHost)exportHost.remove();
+    document.body.classList.remove('exporting');
+    overlay.classList.remove('show');
+    requestAnimationFrame(updatePreviewScale);
+  }
+}
+$('#downloadBtn').addEventListener('click',downloadImage);
+
+setAccent('#e50914');root.style.setProperty('--bar-color','#e50914');root.style.setProperty('--bar-track',$('#barTrackColor').value);$('#progressPreview').style.width=$('#progressInput').value+'%';updateReadabilityStrength();updateHeroInfoScale();updateHeroDetailScale();updateProfileImagePosition();updateFavorite();updateDetailRows();renderEpisodeEditors();renderEpisodes();renderRecommendEditors();renderRecommendations();updateMode();updateHeaderVisibility();updateProfileVisibility();updateLowerSectionVisibility();scheduleRecommendationBodyEqualize();
+const previewResizeObserver=new ResizeObserver(()=>updatePreviewScale());previewResizeObserver.observe($('#captureArea'));window.addEventListener('resize',updatePreviewScale);requestAnimationFrame(updatePreviewScale);
+</script>
+</body>
+</html>
