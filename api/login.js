@@ -35,7 +35,6 @@ export default async function handler(req, res) {
     response_type: "code",
     client_id: clientId,
     redirect_uri: redirectUri,
-    scope: "tweet.read users.read follows.read",
     state,
     code_challenge: codeChallenge,
     code_challenge_method: "S256"
