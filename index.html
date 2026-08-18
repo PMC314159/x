@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Private Link</title>
+
+  <style>
+    :root {
+      color-scheme: light;
+      --border: #dedede;
+      --muted: #777;
+      --soft: #f4f4f4;
+      --alert-bg: #f4e4e4;
+      --alert-text: #8b3d35;
+      --accent: #5a8eb8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: #fff;
+      color: #222;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Pretendard,
+        "Noto Sans KR",
+        Arial,
+        sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+    }
+
+    .topbar {
+      height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 22px;
+      background: #f1f1f1;
+      border-bottom: 1px solid #d9d9d9;
+    }
+
+    .brand {
+      color: #666;
+      font-size: 24px;
+      font-weight: 400;
+      letter-spacing: -.02em;
+    }
+
+    .login-top {
+      color: #666;
+      font-size: 16px;
+      text-decoration: none;
+    }
+
+    .login-top::after {
+      content: "▾";
+      margin-left: 8px;
+      font-size: 11px;
+      color: #999;
+    }
+
+    .page {
+      width: min(1500px, calc(100% - 48px));
+      margin: 28px auto 52px;
+    }
+
+    .notice {
+      margin-bottom: 24px;
+      padding: 22px 20px;
+      border-radius: 5px;
+      background: var(--alert-bg);
+      color: var(--alert-text);
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
+    .hero {
+      min-height: 430px;
+      display: grid;
+      place-items: center;
+      padding: 58px 28px;
+      border-top: 1px solid #eee;
+      border-bottom: 1px solid #eee;
+      background: #fff;
+      text-align: center;
+    }
+
+    .hero-inner {
+      width: min(900px, 100%);
+    }
+
+    .eyebrow {
+      margin: 0 0 18px;
+      color: #999;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .18em;
+    }
+
+    .title {
+      margin: 0;
+      color: #111;
+      font-size: clamp(46px, 8vw, 92px);
+      line-height: .95;
+      font-weight: 800;
+      letter-spacing: -.065em;
+    }
+
+    .subtitle {
+      margin: 22px 0 0;
+      color: #444;
+      font-size: clamp(20px, 3vw, 34px);
+      font-weight: 700;
+      letter-spacing: -.025em;
+    }
+
+    .description {
+      width: min(860px, 100%);
+      margin: 34px auto 0;
+      color: #666;
+      font-size: 16px;
+      line-height: 1.9;
+    }
+
+    .login-wrap {
+      margin-top: 30px;
+      text-align: center;
+    }
+
+    .login-button {
+      min-width: 210px;
+      min-height: 52px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 28px;
+      border: 1px solid #4f7fa6;
+      border-radius: 5px;
+      background: #6aa0cc;
+      color: #fff;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 700;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.25);
+      transition: filter .15s ease;
+    }
+
+    .login-button:hover {
+      filter: brightness(.96);
+    }
+
+    .info {
+      width: min(860px, 100%);
+      margin: 24px auto 0;
+      padding-top: 24px;
+      border-top: 1px solid #ececec;
+      color: #999;
+      font-size: 12px;
+      line-height: 1.8;
+      text-align: center;
+    }
+
+    @media (max-width: 720px) {
+      .topbar {
+        height: 54px;
+        padding: 0 16px;
+      }
+
+      .brand {
+        font-size: 20px;
+      }
+
+      .page {
+        width: min(100% - 24px, 1500px);
+        margin-top: 18px;
+      }
+
+      .notice {
+        padding: 16px;
+        font-size: 14px;
+      }
+
+      .hero {
+        min-height: 360px;
+        padding: 42px 18px;
+      }
+
+      .description {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="brand">Private Link</div>
+
+    <a class="login-top" href="/api/login">
+      Login
+    </a>
+  </header>
+
+  <main class="page">
+    <section class="notice">
+      Important: X 계정 인증 후에만 비공개 계정 정보를 확인할 수 있습니다.
+    </section>
+
+    <section class="hero">
+      <div class="hero-inner">
+        <p class="eyebrow">PRIVATE ACCESS SERVICE</p>
+
+        <h1 class="title">Private Link</h1>
+
+        <p class="subtitle">
+          인증된 사용자에게만 공개되는 계정
+        </p>
+
+        <p class="description">
+          이 페이지는 X 계정 인증을 완료한 사용자에게만
+          새로운 계정 아이디를 보여주는 간단한 비공개 링크 서비스입니다.
+          인증은 X의 공식 승인 페이지에서 진행됩니다.
+        </p>
+
+        <div class="login-wrap">
+          <a class="login-button" href="/api/login">
+            <span>𝕏</span>
+            X 계정으로 로그인
+          </a>
+        </div>
+
+        <div class="info">
+          인증이 완료되면 비공개 계정 아이디와 바로가기 링크가 표시됩니다.
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

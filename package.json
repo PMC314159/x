@@ -1,0 +1,6 @@
+{
+  "name": "x-private-oauth1-classic",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module"
+}
